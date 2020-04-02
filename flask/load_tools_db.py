@@ -166,12 +166,18 @@ for tool in tools:
     print tool + ": " + tool_type
     for i in range(random.randint(MIN_TOOL_COUNT,MAX_TOOL_COUNT)):
         print i
+        #create tool
+        sku = randomString(16)
         conn.execute(insert_tool_stmt, 
             name=tool, 
             type=tool_type, 
-            sku=randomString(16), 
+            sku=sku, 
             image=tool_type+".png", 
             price=random.randint(MIN_TOOL_PRICE,MAX_TOOL_PRICE))
+
+        conn.execute(insert_inventory_stmt, 
+            sku=sku, 
+            count=random.randint(1,30))
 
 conn.close()
 
