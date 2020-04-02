@@ -16,10 +16,10 @@ USERNAME = os.getenv("USERNAME")
 PASSWORD = os.getenv("PASSWORD")
 ENV = os.environ.get("FLASK_ENV")
 
-MIN_TOOL_COUNT = 2
-MAX_TOOL_COUNT = 10
-MIN_TOOL_PRICE = 5
-MAX_TOOL_PRICE = 100
+MIN_TOOL_COUNT = 1
+MAX_TOOL_COUNT = 3
+MIN_TOOL_PRICE = 100
+MAX_TOOL_PRICE = 10000
 
 def randomString(stringLength=10):
     """Generate a random string of fixed length"""
@@ -27,101 +27,131 @@ def randomString(stringLength=10):
     return ''.join(random.choice(letters) for i in range(stringLength))
 
 
-tools = ["Ball Peen Hammer",
-    "Claw Hammer",
-    "Club Hammer",
-    "Dead Blow Hammer",
-    "Framing Hammer",
-    "Rubber Mallet",
-    "Joiners Mallet",
-    "Sledge Hammer",
-    "Tack Hammer",
-    "Blacksmith Hammer",
-    "Blocking Hammer",
-    "Brass Hammer",
-    "Brick Hammer",
-    "Bushing Hammer",
-    "Cross Peen Hammer",
-    "Cross Peen Pin Hammer",
-    "Chasing Hammer",
-    "Drywall Hammer",
-    "Electricians Hammer",
-    "Engineering Hammer",
-    "Hatchet Hammer",
-    "Linemans Hammer",
-    "Mechanics Hammer",
-    "Piton Hammer",
-    "Planishing Hammer",
-    "Power Hammer",
-    "Rip Hammer",
-    "Rock Hammer",
-    "Scaling Hammer",
-    "Scutch Hammer",
-    "Shingle Hammer",
-    "Soft-Faced hammer",
-    "Spike Maul Hammer",
-    "Stone Sledge Hammer",
-    "Straight Peen Hammer",
-    "Tinners Hammer",
-    "Toolmakers Hammer",
-    "Trim Hammer",
-    "Welding Hammer",
-    "Adjustable Wrench",
-    "Allen Wrench",
-    "Box-Ended Wrench",
-    "Combination Wrench",
-    "Crowfoot Wrench",
-    "Impact Wrench",
-    "Lug Wrench",
-    "Oil Filter Wrench",
-    "Open-Ended Wrench",
-    "Pipe Wrench",
-    "Ratcheting Wrench",
-    "Socket Wrench",
-    "Torque wrench",
-    "Alligator Wrench",
-    "Armorers Wrench",
-    "Basin Wrench",
-    "Bionic Wrench",
-    "Bung Wrench",
-    "Cone Wrench",
-    "Die Stock Holder Wrench",
-    "Dog Bone Wrench",
-    "Fan Clutch Wrench",
-    "Fire Hydrant Wrench",
-    "Flare Nut Wrench",
-    "Garbage Disposal Wrench",
-    "Hammer Wrench",
-    "Monkey Wrench",
-    "Pedal Wrench",
-    "Pliers Wrench",
-    "Plumbers Wrench",
-    "Spanner Wrench",
-    "Spark Plug Wrench",
-    "Spoke Wrench",
-    "Spud Wrench",
-    "Strap Wrench",
-    "Stubby Wrench",
-    "Tap Wrench",
-    "Tension Wrench",
-    "Duplex Nails",
-    "Annular Ring Nails",
-    "Spiral Flooring Nails",
-    "Cut Flooring Nails",
-    "Masonry Nails",
-    "Roofing Nails",
-    "Casing Nails",
-    "Box Nails",
-    "Finishing Nails"]
+tools = ["ball peen hammer",
+    "claw hammer",
+    "club hammer",
+    "dead blow hammer",
+    "framing hammer",
+    "rubber mallet",
+    "joiners mallet",
+    "sledge hammer",
+    "tack hammer",
+    "blacksmith hammer",
+    "blocking hammer",
+    "brass hammer",
+    "brick hammer",
+    "bushing hammer",
+    "cross peen hammer",
+    "cross peen pin hammer",
+    "chasing hammer",
+    "drywall hammer",
+    "electricians hammer",
+    "engineering hammer",
+    "hatchet hammer",
+    "linemans hammer",
+    "mechanics hammer",
+    "piton hammer",
+    "planishing hammer",
+    "power hammer",
+    "rip hammer",
+    "rock hammer",
+    "scaling hammer",
+    "scutch hammer",
+    "shingle hammer",
+    "soft-faced hammer",
+    "spike maul hammer",
+    "stone sledge hammer",
+    "straight peen hammer",
+    "tinners hammer",
+    "toolmakers hammer",
+    "trim hammer",
+    "welding hammer",
+    "adjustable wrench",
+    "allen wrench",
+    "box-ended wrench",
+    "combination wrench",
+    "crowfoot wrench",
+    "impact wrench",
+    "lug wrench",
+    "oil filter wrench",
+    "open-ended wrench",
+    "pipe wrench",
+    "ratcheting wrench",
+    "socket wrench",
+    "torque wrench",
+    "alligator wrench",
+    "armorers wrench",
+    "basin wrench",
+    "bionic wrench",
+    "bung wrench",
+    "cone wrench",
+    "die stock holder wrench",
+    "dog bone wrench",
+    "fan clutch wrench",
+    "fire hydrant wrench",
+    "flare nut wrench",
+    "garbage disposal wrench",
+    "hammer wrench",
+    "monkey wrench",
+    "pedal wrench",
+    "pliers wrench",
+    "plumbers wrench",
+    "spanner wrench",
+    "spark plug wrench",
+    "spoke wrench",
+    "spud wrench",
+    "strap wrench",
+    "stubby wrench",
+    "tap wrench",
+    "tension wrench",
+    "duplex nails",
+    "annular ring nails",
+    "spiral flooring nails",
+    "cut flooring nails",
+    "masonry nails",
+    "roofing nails",
+    "casing nails",
+    "box nails",
+    "finishing nails"]
 
-
+tools.sort()
 
 db = create_engine('postgresql://' + USERNAME + ':' + PASSWORD + '@' + HOST + ':5432/' + DATABASE)
 conn = db.connect()
 
-stmt = sqlalchemy.text(
-	"INSERT INTO tools(name, type, sku, image, price)"
+insert_tool_stmt = sqlalchemy.text(
+	"INSERT INTO tools (name, type, sku, image, price)"
 	" VALUES (:name, :type, :sku, :image, :price)"
+)
+
+create_tools_table_stmt = sqlalchemy.text(
+	"CREATE TABLE tools("
+    "id SERIAL PRIMARY KEY NOT NULL,"
+    "name VARCHAR NOT NULL,"
+    "type VARCHAR NOT NULL,"
+    "sku VARCHAR NOT NULL,"
+    "image VARCHAR NOT NULL,"
+    "price INTEGER NOT NULL)"
+)
+
+drop_tools_table_stmt = sqlalchemy.text(
+	"DROP TABLE IF EXISTS tools"
+)
+
+insert_inventory_stmt = sqlalchemy.text(
+	"INSERT INTO inventory(sku, count)"
+	" VALUES (:sku, :count)"
+)
+
+create_inventory_table_stmt = sqlalchemy.text(
+	"CREATE TABLE inventory("
+    "id SERIAL PRIMARY KEY NOT NULL,"
+    "sku VARCHAR NOT NULL,"
+    "count INTEGER NOT NULL)"
+)
+
+drop_inventory_table_stmt = sqlalchemy.text(
+	"DROP TABLE IF EXISTS inventory"
 )
 
 for tool in tools:
@@ -136,7 +166,7 @@ for tool in tools:
     print tool + ": " + tool_type
     for i in range(random.randint(MIN_TOOL_COUNT,MAX_TOOL_COUNT)):
         print i
-        conn.execute(stmt, 
+        conn.execute(insert_tool_stmt, 
             name=tool, 
             type=tool_type, 
             sku=randomString(16), 
@@ -144,3 +174,23 @@ for tool in tools:
             price=random.randint(MIN_TOOL_PRICE,MAX_TOOL_PRICE))
 
 conn.close()
+
+
+
+##NEED TO LOAD NEW DATA? DROP AND RECREATE THE TABLES
+# r = conn.execute("select * from inventory").fetchall()
+# conn.execute(drop_inventory_table_stmt)
+# conn.execute(create_inventory_table_stmt)
+# r = conn.execute("select * from inventory").fetchall()
+# conn.execute(insert_inventory_stmt, sku="dfadfadfadfa", count=23)
+# r = conn.execute("select * from inventory").fetchall()
+
+# r = conn.execute("select * from tools").fetchall()
+# conn.execute(drop_tools_table_stmt)
+# conn.execute(create_tools_table_stmt)
+# r = conn.execute("select * from tools").fetchall()
+# tool = "ball peen hammer"
+# tool_type = "hammer"
+# conn.execute(insert_tool_stmt, name=tool, type=tool_type, sku=randomString(16), image=tool_type+".png", price=random.randint(MIN_TOOL_PRICE,MAX_TOOL_PRICE))
+# r = conn.execute("select * from tools").fetchall()
+
