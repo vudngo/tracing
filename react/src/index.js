@@ -6,6 +6,13 @@ import registerServiceWorker from './registerServiceWorker';
 import * as Sentry from '@sentry/browser';
 import { Integrations as ApmIntegrations } from '@sentry/apm';
 
+import { render } from 'react-dom'
+import { Provider } from 'react-redux'
+import { createStore, applyMiddleware } from 'redux'
+import logger from 'redux-logger'
+import rootReducer from './reducers'
+
+
 const tracingOrigins = [
   'localhost', 
   process.env.REACT_APP_BACKEND,
@@ -15,7 +22,7 @@ const tracingOrigins = [
 console.log('tracingOrigins', tracingOrigins)
 
 Sentry.init({
-    dsn: 'https://0d52d5f4e8a64f5ab2edce50d88a7626@sentry.io/1428657',
+    dsn: process.env.REACT_APP_DSN || 'https://0d52d5f4e8a64f5ab2edce50d88a7626@sentry.io/1428657',
     release: process.env.REACT_APP_RELEASE,
     environment: "prod",
     debug: true,
@@ -33,6 +40,15 @@ Sentry.init({
     tracesSampleRate: 1.0,
 });
 
-ReactDOM.render(<App /> , document.getElementById('root'));
+const store = createStore(
+  rootReducer,
+  applyMiddleware(logger)
+)
+
+render(
+  <Provider store={store}>
+    <App />
+  </Provider>, document.getElementById('root')
+);
 
 registerServiceWorker();
