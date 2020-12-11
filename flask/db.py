@@ -1,13 +1,21 @@
 import json
+import numpy
 import os
 import psycopg2
 import string
 import psycopg2.extras
 import random
+from random import seed
+from random import randint
+import time
+from datetime import datetime
+from pytz import timezone
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 import sqlalchemy
 from sqlalchemy import create_engine
+from utils import wait
+import operator
 from dotenv import load_dotenv
 load_dotenv()
 HOST = os.getenv("HOST")
@@ -16,7 +24,7 @@ USERNAME = os.getenv("USERNAME")
 PASSWORD = os.getenv("PASSWORD")
 ENV = os.environ.get("FLASK_ENV")
 
-insert_query = """INSERT INTO tools(name, type, sku, image, price) 
+insert_query = """INSERT INTO tools(name, type, sku, image, price)
                   VALUES (%s, %s, %s, %s, %s);"""
 
 # generate random tool names + descriptions
@@ -51,11 +59,12 @@ def get_all_tools():
             conn = db.connect()
         # Execute the query and fetch all results
         with sentry_sdk.start_span(op="run query"):
+            wait(operator.le, 12, 1)
             results = conn.execute(
                 "SELECT * FROM tools"
             ).fetchall()
         conn.close()
-        
+
         rows = []
         with sentry_sdk.start_span(op="format results"):
             for row in results:
@@ -75,7 +84,6 @@ def get_inventory():
                 "SELECT * FROM inventory" #will write the correct query in the future
             ).fetchall()
         conn.close()
-        
         rows = []
         for row in results:
             rows.append(dict(row))
@@ -93,7 +101,7 @@ def update_inventory():
                 "SELECT * FROM inventory" #will write the correct query in the future
             ).fetchall()
         conn.close()
-        
+
         rows = []
         for row in results:
             rows.append(dict(row))

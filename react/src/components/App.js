@@ -1,11 +1,11 @@
 /*global Sentry*/
 import React, { Component } from "react";
+import ShoppingCart from './ShoppingCart';
 import "./App.css";
 import wrenchImg from "../assets/wrench.png";
 import nailsImg from "../assets/nails.png";
 import hammerImg from "../assets/hammer.png";
-import * as Sentry from '@sentry/browser';
-import { Integrations as ApmIntegrations } from '@sentry/apm';
+import * as Sentry from '@sentry/react';
 
 import { connect } from 'react-redux'
 import { addTool, resetCart, setTools } from '../actions'
@@ -31,14 +31,17 @@ class App extends Component {
         .substring(2, 6) + "@yahoo.com";
 
     this.buyItem = this.buyItem.bind(this);
-    this.checkout = this.checkout.bind(this);
-    this.resetCart = this.resetCart.bind(this);
 
     // generate unique sessionId and set as Sentry tag
     this.sessionId = getUniqueId();
     Sentry.configureScope(scope => {
       scope.setTag("session_id", this.sessionId);
     });
+  }
+
+  getPlanName() {
+    const plans = ["medium-plan", "large-plan", "small-plan", "enterprise"];
+    return plans[Math.floor(Math.random() * plans.length)];
   }
 
   async componentDidMount() {
@@ -50,7 +53,7 @@ class App extends Component {
     // Add context to error/event
     Sentry.configureScope(scope => {
       scope.setUser({ email: this.email }); // attach user/email context
-      scope.setTag("customerType", "medium-plan"); // custom-tag
+      scope.setTag("customerType", this.getPlanName()); // custom-tag
     });
 
     //Will add an XHR Sentry breadcrumb
@@ -65,7 +68,7 @@ class App extends Component {
         case "wrench":
           tool.image = wrenchImg
           return tool
-        case "nails":    
+        case "nails":
           tool.image = nailsImg
           return tool
         default:
@@ -73,6 +76,20 @@ class App extends Component {
           return tool
       }
     })
+
+    // Sentry Transaction, include the tools data as a span
+    const transaction = Sentry.getCurrentHub()
+      .getScope()
+      .getTransaction();
+
+    if (transaction) {
+      let span = transaction.startChild({
+        data: { toolsData: tools },
+        op: "tools received",
+        description: "tools were received",
+      });
+      span.finish();
+    }
 
     this.props.setTools(tools)
   }
@@ -82,7 +99,6 @@ class App extends Component {
     this.setState({ success: false });
 
     this.props.addTool(item)
-
 
     Sentry.configureScope(scope => {
       scope.setExtra('cart', JSON.stringify(this.props.cart));
@@ -95,56 +111,18 @@ class App extends Component {
     });
   }
 
-  resetCart(event) {
-    event.preventDefault();
-    this.props.resetCart([])
-    this.setState({ hasError: false, success: false });
-
-    Sentry.configureScope(scope => {
-      scope.setExtra('cart', '');
-    });
-    Sentry.addBreadcrumb({
-      category: 'cart',
-      message: 'User emptied cart',
-      level: 'info'
-    });
-  }
-
   performXHRRequest(){
     fetch('https://jsonplaceholder.typicode.com/todos/1')
       .then(response => response.json())
       .then(json => console.log(json));
   }
 
-  async checkout() {
-    
-    const order = {
-      email: this.email,
-      cart: this.props.cart
-    };
-
-    ApmIntegrations.Tracing.startIdleTransaction('checkout',
-      {op: 'successOp', transaction: 'successTransaction', sampled: true})
-
-    const response = await fetch(`${BACKEND}/checkout`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(order)
-    }).catch((err) => { throw Error(err) });
-
-    if (!response.ok) {
-      throw new Error(response.status + " - " + (response.statusText || "INTERNAL SERVER ERROR"));
-    }
-
-    this.setState({ success: true });
-    return response;
-  }
-
   async getTools() {
     const response = await fetch(`${BACKEND}/tools`, {
-      method: "GET"
+      method: "GET",
+      headers: {
+        'email': this.email
+      }
     })
 
     if (!response.ok) {
@@ -206,66 +184,18 @@ class App extends Component {
           </header>
 
           <div className="inventory">
-          <table>
-            <tbody>
-            {this.createTable()}
-            </tbody>
-          </table>
-          </div>
-        </main>
-        <div className="sidebar">
-          <header>
-            <h4>Hi, {this.email}!</h4>
-          </header>
-          <div className="cart">
-            {this.props.cart.length ? (
-              <div>
-                {Object.keys(cartDisplay).map(id => {
-                  const { name, price } = this.props.tools.find(i => i.id === parseInt(id))
-                  const qty = cartDisplay[id];
-                  return (
-                    <div className="cart-item" key={id}>
-                      <div className="cart-item-name">
-                        {name} x{qty}
-                      </div>
-                      <div className="cart-item-price">
-                        ${monify(price * qty)}
-                      </div>
-                    </div>
-                  );
-                })}
-                <hr />
-                <div className="cart-item">
-                  <div className="cart-item-name">
-                    <strong>Total</strong>
-                  </div>
-                  <div className="cart-item-price">
-                    <strong>${monify(total)}</strong>
-                  </div>
-                </div>
-              </div>
+            {this.props.tools.length ? (
+              <table>
+                <tbody>
+                {this.createTable()}
+                </tbody>
+              </table>
             ) : (
-              "Your cart is empty"
+              <div>Loading...</div>
             )}
           </div>
-          {this.state.hasError && (
-            <p className="cart-error">Something went wrong</p>
-          )}
-          {this.state.success && (
-            <p className="cart-success">Thank you for your purchase!</p>
-          )}
-          <button
-            onClick={this.checkout}
-            disabled={this.props.cart.length === 0}
-          >
-            Checkout
-          </button>{" "}
-          {this.props.cart.length > 0 && (
-            <button onClick={this.resetCart} className="cart-reset">
-              Empty cart
-            </button>
-          )}
-        </div>
+        </main>
+        <ShoppingCart/>
       </div>
     );
   }
@@ -281,4 +211,4 @@ const mapStateToProps = (state, ownProps) => {
 export default connect(
   mapStateToProps,
   { addTool, resetCart, setTools }
-)(App)
+)(Sentry.withProfiler(App, { name: "ToolStore"}))

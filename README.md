@@ -7,20 +7,32 @@ this was tested on:
 
 | dependency    | version
 | ------------- |:-------------:|
+| sentry_sdk | 0.16.1 |
+| @sentry/browser | 5.15.0 |
+| @sentry/apm | 5.20.1 |
+| @sentry/react 5.20.1 | 
+| node | v.14.2 |
+| redux | 4.0.5 |
+| react-redux | 7.2.1 |
+| react-dom | 16.13.1 |
+| react | 16.13.3 |
 | Google Cloud SDK | 277.0.0 |
 | bq | 2.0.52 |
 | AVD | Nexus 5x API 29 x86 |
 | core | 2020.01.17 |
 | gsutil 4.47 | gsutil 4.47 |
+| docker | 19.03.12 |
 #### Setup Instructions
 1. Have an admin set you as Owner on the Project in GCP
 2. Download `gcloud` google cloud sdk https://cloud.google.com/sdk/docs/. This will have you 'initialize' your sdk from command line, and set some defaults. If you get asked for 'zone' select us-central1-a. 'region' is us-central1
 3. `gcloud auth login` opens browser with Google OAUTH, select your Sentry email
 4. `gcloud config set project <project ID>` get Google Cloud Project ID from console.cloud.google.com.
 5. `gcloud config set run/region us-central1` to set 'us-central1' as default region
-6. Create a react/.env file if you don't already have one. Use react/.env.default as an example. Open react/.env and update the REACT_APP_BACKEND_URL with your `whoami` so your React container will call your Flask container.
-7. Create a flask/.env file if you don't already have one. Use flask/.env.default as an example. Open flask/.env and fill in the values
-8. cd into flask and create a python2 virtualenv, and pip install -r requirements.txt inside of it.
+6. Create a `react/.env` using `react/.env.default` as an example, and fill in the values. In the `REACT_APP_BACKEND_URL` put your `whoami` so your React container will call the right Flask container.
+7. Create a `flask/.env` using `flask/.env.default` as an example, and fill in the values.
+8. Whitelist your IP address in Cloud SQL for the database you see there.
+9. **Dev - without docker** `cd ./flask && pip install -r requirements.txt`, recommended inside a virtualenv.
+10. **Dev - without docker** `cd ./react` and `npm install`
 
 ## Run
 #### Prod - GCP
@@ -29,6 +41,8 @@ this was tested on:
 #### Dev - with docker
 1. `make docker_compose`  
 docker-compose down
+
+The dockerfile uses whatever is in `./react/build` so make sure you have an updated build.
 
 #### Dev - without docker
 1. `cd ./react && npm run deploylocal` 
